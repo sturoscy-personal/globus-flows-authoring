@@ -103,20 +103,22 @@ Ingest parameters shown in the docs: `search_index` (UUID), `subject`, `content`
 
 Base `https://compute.actions.globus.org`. Two versions: V3 at `https://compute.actions.globus.org/v3` (preferred, more functionality) and V2 at the base URL. Both return results in the same format. The deprecated funcX provider (`automate.funcx.org`) should not be used.
 
-V3 takes a `tasks` list, each with an endpoint ID, function ID, and `args`/`kwargs`; the endpoint ID is a JSON parameter, not part of the URL. Results are in `details.result` (list of outputs) and `details.results` (list of `{task_id, output}`).
+V3 takes a top-level `endpoint_id` and a `tasks` list; each task has a `function_id` and `args`/`kwargs`. The endpoint ID is a JSON parameter, not part of the URL. Results are in `details.result` (list of outputs) and `details.results` (list of `{task_id, output}`).
 
 ```json
 "Parameters": {
+  "endpoint_id.$": "$.compute_endpoint",
   "tasks": [
     {
-      "endpoint.$": "$.compute_endpoint",
-      "function.$": "$.function_id",
+      "function_id.$": "$.function_id",
       "args.$": "$.args",
       "kwargs.$": "$.kwargs"
     }
   ]
 }
 ```
+
+Do not put `endpoint` or `function` inside a task: the provider rejects them with `ActionUnableToRun` (`$.endpoint_id` and `$.tasks[0].function_id` required; `$.tasks[0].endpoint` and `$.tasks[0].function` not permitted). This shape was confirmed from a live run's error, not from the provider's introspection output, so verify with `curl https://compute.actions.globus.org/v3 | jq .input_schema` before relying on it.
 
 The function must already be registered with Globus Compute, and the endpoint needs the required Python environment. Compute function definitions are separate work from the flow. Defining explicit args/kwargs is recommended.
 
