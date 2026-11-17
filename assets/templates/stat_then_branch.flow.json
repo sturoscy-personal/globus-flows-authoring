@@ -1,0 +1,95 @@
+{
+  "Comment": "Stat the source path, then transfer it recursively only if it is a directory.",
+  "StartAt": "StatSource",
+  "States": {
+    "StatSource": {
+      "Type": "Action",
+      "ActionUrl": "https://transfer.actions.globus.org/stat",
+      "Parameters": {
+        "endpoint_id.$": "$.source.id",
+        "path.$": "$.source.path"
+      },
+      "ResultPath": "$.StatResult",
+      "WaitTime": 300,
+      "Catch": [
+        {
+          "ErrorEquals": ["ActionFailedException", "ActionUnableToRun", "ActionTimeout"],
+          "ResultPath": "$.Error",
+          "Next": "StatFailed"
+        }
+      ],
+      "Next": "IsDirectory"
+    },
+    "IsDirectory": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.StatResult.details.type",
+          "StringEquals": "dir",
+          "Next": "TransferDirectory"
+        }
+      ],
+      "Default": "TransferFile"
+    },
+    "TransferDirectory": {
+      "Type": "Action",
+      "ActionUrl": "https://transfer.actions.globus.org/transfer",
+      "Parameters": {
+        "source_endpoint.$": "$.source.id",
+        "destination_endpoint.$": "$.destination.id",
+        "DATA": [
+          {
+            "source_path.$": "$.source.path",
+            "destination_path.$": "$.destination.path",
+            "recursive": true
+          }
+        ]
+      },
+      "ResultPath": "$.TransferResult",
+      "WaitTime": 7200,
+      "Catch": [
+        {
+          "ErrorEquals": ["ActionFailedException", "ActionUnableToRun", "ActionTimeout"],
+          "ResultPath": "$.Error",
+          "Next": "TransferFailed"
+        }
+      ],
+      "End": true
+    },
+    "TransferFile": {
+      "Type": "Action",
+      "ActionUrl": "https://transfer.actions.globus.org/transfer",
+      "Parameters": {
+        "source_endpoint.$": "$.source.id",
+        "destination_endpoint.$": "$.destination.id",
+        "DATA": [
+          {
+            "source_path.$": "$.source.path",
+            "destination_path.$": "$.destination.path",
+            "recursive": false
+          }
+        ]
+      },
+      "ResultPath": "$.TransferResult",
+      "WaitTime": 7200,
+      "Catch": [
+        {
+          "ErrorEquals": ["ActionFailedException", "ActionUnableToRun", "ActionTimeout"],
+          "ResultPath": "$.Error",
+          "Next": "TransferFailed"
+        }
+      ],
+      "End": true
+    },
+    "StatFailed": {
+      "Type": "Fail",
+      "Error": "StatFailed",
+      "Cause": "Could not stat the source path. Check the collection ID, path, and consents. See $.Error."
+    },
+    "TransferFailed": {
+      "Type": "Fail",
+      "Error": "TransferFailed",
+      "Cause": "The transfer did not complete. See $.Error in the run output."
+    }
+  }
+}

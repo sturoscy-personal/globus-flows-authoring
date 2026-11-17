@@ -1,0 +1,63 @@
+{
+  "Comment": "Transfer a dataset, then ingest its metadata into a Globus Search index.",
+  "StartAt": "Transfer",
+  "States": {
+    "Transfer": {
+      "Type": "Action",
+      "Comment": "Copy the source path to the destination collection.",
+      "ActionUrl": "https://transfer.actions.globus.org/transfer",
+      "Parameters": {
+        "source_endpoint.$": "$.source.id",
+        "destination_endpoint.$": "$.destination.id",
+        "DATA": [
+          {
+            "source_path.$": "$.source.path",
+            "destination_path.$": "$.destination.path",
+            "recursive": true
+          }
+        ]
+      },
+      "ResultPath": "$.TransferResult",
+      "WaitTime": 7200,
+      "Catch": [
+        {
+          "ErrorEquals": ["ActionFailedException", "ActionUnableToRun", "ActionTimeout"],
+          "ResultPath": "$.Error",
+          "Next": "TransferFailed"
+        }
+      ],
+      "Next": "Ingest"
+    },
+    "Ingest": {
+      "Type": "Action",
+      "Comment": "Make the dataset discoverable in Globus Search.",
+      "ActionUrl": "https://actions.globus.org/search/ingest",
+      "Parameters": {
+        "search_index.$": "$.search_index",
+        "subject.$": "$.subject",
+        "visible_to.$": "$.visible_to",
+        "content.$": "$.metadata"
+      },
+      "ResultPath": "$.IngestResult",
+      "WaitTime": 600,
+      "Catch": [
+        {
+          "ErrorEquals": ["ActionFailedException", "ActionUnableToRun", "ActionTimeout"],
+          "ResultPath": "$.Error",
+          "Next": "IngestFailed"
+        }
+      ],
+      "End": true
+    },
+    "TransferFailed": {
+      "Type": "Fail",
+      "Error": "TransferFailed",
+      "Cause": "The transfer did not complete. See $.Error in the run output."
+    },
+    "IngestFailed": {
+      "Type": "Fail",
+      "Error": "IngestFailed",
+      "Cause": "Data was transferred but the Search ingest failed. See $.Error in the run output."
+    }
+  }
+}

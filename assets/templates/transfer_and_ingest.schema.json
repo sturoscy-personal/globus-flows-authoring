@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "required": ["source", "destination", "search_index", "subject", "metadata"],
+  "properties": {
+    "source": {
+      "type": "object",
+      "format": "globus-collection",
+      "title": "Source collection and path",
+      "description": "Where the data currently lives. Directory paths should end with a slash.",
+      "required": ["id", "path"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "path": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "destination": {
+      "type": "object",
+      "format": "globus-collection",
+      "title": "Destination collection and path",
+      "description": "Where the data should be copied to.",
+      "required": ["id", "path"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "path": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "search_index": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Search index",
+      "description": "UUID of the Globus Search index to ingest into."
+    },
+    "subject": {
+      "type": "string",
+      "title": "Search subject",
+      "description": "Unique subject identifier for the Search entry (for example a dataset ID or URL)."
+    },
+    "metadata": {
+      "type": "object",
+      "title": "Metadata",
+      "description": "The metadata document to store as the Search entry content."
+    },
+    "visible_to": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["public"],
+      "title": "Visible to",
+      "description": "Principal URNs allowed to see the entry, or 'public'."
+    }
+  },
+  "additionalProperties": false
+}
